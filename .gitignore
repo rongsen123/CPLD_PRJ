@@ -1,0 +1,23 @@
+# Quartus generated databases and incremental compilation state
+db/
+incremental_db/
+work/
+
+# Generated programming, reports and simulation output
+output_files/
+simulation/
+*.pof
+*.sof
+*.jdi
+*.rpt
+*.summary
+*.smsg
+*.pin
+*.cdf
+*.qws
+
+# Editor and operating-system state
+Thumbs.db
+desktop.ini
+*.bak
+*~

@@ -1,0 +1,96 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 1991-2013 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions
+# and other software and tools, and its AMPP partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Altera Program License
+# Subscription Agreement, Altera MegaCore Function License
+# Agreement, or other applicable license agreement, including,
+# without limitation, that your use is for the sole purpose of
+# programming logic devices manufactured by Altera and sold by
+# Altera or its authorized distributors.  Please refer to the
+# applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus II 64-Bit
+# Version 13.1.0 Build 162 10/23/2013 SJ Full Version
+# Date created = 13:15:04  July 18, 2026
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		top_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus II software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "MAX II"
+set_global_assignment -name DEVICE EPM1270T144C5
+set_global_assignment -name TOP_LEVEL_ENTITY top
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 13.1
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "13:15:04  JULY 18, 2026"
+set_global_assignment -name LAST_QUARTUS_VERSION 13.1
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR "-1"
+set_global_assignment -name POWER_EXT_SUPPLY_VOLTAGE_TO_REGULATOR 3.3V
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim (Verilog)"
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name VERILOG_FILE rtl/top.v
+set_global_assignment -name VERILOG_FILE rtl/ads7818_acquisition_controller.v
+set_global_assignment -name VERILOG_FILE rtl/temperature_frequency_monitor.v
+set_global_assignment -name VERILOG_FILE rtl/fiber_uart_byte_receiver.v
+set_global_assignment -name VERILOG_FILE rtl/modbus_rtu_slave_fixed8.v
+set_global_assignment -name VERILOG_FILE rtl/adc_block_average.v
+set_global_assignment -name VERILOG_FILE rtl/system_fault_monitor.v
+set_global_assignment -name VERILOG_FILE rtl/fiber_uart_byte_transmitter.v
+set_global_assignment -name SDC_FILE top.sdc
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "NO HEAT SINK WITH STILL AIR"
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
+
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+set_location_assignment PIN_72 -to adc_serial_clk_o
+set_location_assignment PIN_70 -to adc_convert_o
+set_location_assignment PIN_71 -to adc_serial_data_i
+set_location_assignment PIN_18 -to sys_clk_i
+set_location_assignment PIN_77 -to bypass_status_i
+set_location_assignment PIN_114 -to fan_relay_n_o
+set_location_assignment PIN_107 -to bypass_relay_n_o
+
+set_location_assignment PIN_27 -to temperature_freq_i
+set_location_assignment PIN_75 -to spare_digital_input_i
+set_location_assignment PIN_76 -to peer_module_fault_i
+set_location_assignment PIN_42 -to fiber_rx_i
+set_location_assignment PIN_29 -to drive_fault_2_i
+set_location_assignment PIN_30 -to drive_fault_1_i
+set_location_assignment PIN_49 -to dc_overvoltage_fault_i
+set_location_assignment PIN_41 -to tx_fault_led_n_o
+set_location_assignment PIN_40 -to rx_fault_led_n_o
+set_location_assignment PIN_140 -to pwm_hold_o
+set_location_assignment PIN_144 -to pwm_bridge_2_b_o
+set_location_assignment PIN_143 -to pwm_bridge_2_a_o
+set_location_assignment PIN_142 -to pwm_bridge_1_b_o
+set_location_assignment PIN_141 -to pwm_bridge_1_a_o
+set_location_assignment PIN_43 -to fiber_tx_o
+set_location_assignment PIN_108 -to fault_output_n_o
+set_location_assignment PIN_39 -to fault_led_n_o
+set_location_assignment PIN_38 -to LED1
+set_location_assignment PIN_37 -to LED2
+set_location_assignment PIN_32 -to LED3
+set_location_assignment PIN_31 -to LED4
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
