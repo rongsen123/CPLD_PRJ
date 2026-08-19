@@ -21,6 +21,8 @@ module tb_modbus_rtu_slave_fixed8;
     reg [15:0] crc;
     reg clear_seen = 0;
     reg reset_seen = 0;
+    wire [11:0] vdc_over_limit;
+    reg fault_any = 1'b1;
 
     always #16.666 clk = ~clk;
 
@@ -33,8 +35,9 @@ module tb_modbus_rtu_slave_fixed8;
         .vdc_raw_i(12'h123), .vdc_average_i(12'h234),
         .temperature_count_i(16'h3456),
         .adc_valid_i(1'b1), .temperature_valid_i(1'b1),
-        .fault_flags_i(32'h00000ABC), .fault_any_i(1'b1),
-        .command_echo_o(command_echo), .clear_fault_o(clear_fault),
+        .fault_flags_i(32'h00000ABC), .fault_any_i(fault_any),
+        .command_echo_o(command_echo), .vdc_over_limit_o(vdc_over_limit),
+        .clear_fault_o(clear_fault),
         .soft_reset_o(soft_reset),
         .link_seen_o(link_seen), .link_fault_o(link_fault),
         .protocol_error_pulse_o(protocol_error),
@@ -126,12 +129,19 @@ module tb_modbus_rtu_slave_fixed8;
         send_request(8'h01, 8'h04, 16'h0000, 16'd14, 1'b0);
         if (captured_count != 33 || captured[0] != 8'h01 ||
             captured[1] != 8'h04 || captured[2] != 8'd28 ||
-            captured[3] != 8'h01 || captured[4] != 8'h03 ||
+            captured[3] != 8'h01 || captured[4] != 8'h04 ||
             captured[7] != 8'h01 || captured[8] != 8'h23) begin
             $display("FAIL FC04 full map/count=%0d", captured_count);
             errors = errors + 1;
         end else check_crc(33);
 
+        send_request(8'h01, 8'h06, 16'h0100, 16'd1, 1'b0);
+        if (captured_count != 5 || command_echo != 0 ||
+            captured[1] != 8'h86 || captured[2] != 8'h03)
+            errors = errors + 1;
+        else check_crc(5);
+
+        fault_any = 1'b0;
         send_request(8'h01, 8'h06, 16'h0100, 16'd1, 1'b0);
         if (captured_count != 8 || command_echo != 1 || captured[1] != 8'h06)
             errors = errors + 1;
@@ -154,6 +164,23 @@ module tb_modbus_rtu_slave_fixed8;
         if (captured_count != 8 || command_echo != 0)
             errors = errors + 1;
         else check_crc(8);
+
+        send_request(8'h01, 8'h06, 16'h1000, 16'd3000, 1'b0);
+        if (captured_count != 8 || vdc_over_limit != 12'd3000)
+            errors = errors + 1;
+        else check_crc(8);
+
+        send_request(8'h01, 8'h03, 16'h1000, 16'd1, 1'b0);
+        if (captured_count != 7 || captured[1] != 8'h03 ||
+            captured[3] != 8'h0B || captured[4] != 8'hB8)
+            errors = errors + 1;
+        else check_crc(7);
+
+        send_request(8'h01, 8'h06, 16'h1000, 16'd3411, 1'b0);
+        if (captured_count != 5 || captured[1] != 8'h86 ||
+            captured[2] != 8'h03 || vdc_over_limit != 12'd3000)
+            errors = errors + 1;
+        else check_crc(5);
 
         clear_seen = 1'b0;
         send_request(8'h01, 8'h06, 16'h0101, 16'hA55A, 1'b0);

@@ -22,6 +22,7 @@ module modbus_rtu_slave_fixed8 (
     input  wire [31:0] fault_flags_i,           // CPLD latched fault bitmap
     input  wire        fault_any_i,             // Any CPLD fault
     output reg  [15:0] command_echo_o,           // 0=STOP, 1=START echo only
+    output reg  [11:0] vdc_over_limit_o,         // Local software OV threshold, raw ADC counts
     output reg         clear_fault_o,            // One-clock clear pulse
     output reg         soft_reset_o,             // Pulse after reset-command reply is sent
     output reg         link_seen_o,              // Valid request received once
@@ -89,7 +90,7 @@ module modbus_rtu_slave_fixed8 (
         input [3:0] register_number;
         begin
             case (register_number)
-                4'h0: input_register = 16'h0103;
+                4'h0: input_register = 16'h0105;
                 4'h1: input_register = snapshot_valid_count_r;
                 4'h2: input_register = {4'd0, snapshot_vdc_raw_r};
                 4'h3: input_register = {4'd0, snapshot_vdc_average_r};
@@ -104,6 +105,17 @@ module modbus_rtu_slave_fixed8 (
                 4'hC: input_register = snapshot_crc_error_count_r;
                 4'hD: input_register = snapshot_incomplete_count_r;
                 default: input_register = 16'd0;
+            endcase
+        end
+    endfunction
+
+    function [15:0] holding_register;
+        input [15:0] register_address;
+        begin
+            case (register_address)
+                16'h0100: holding_register = command_echo_o;
+                16'h1000: holding_register = {4'd0, vdc_over_limit_o};
+                default: holding_register = 16'd0;
             endcase
         end
     endfunction
@@ -133,12 +145,13 @@ module modbus_rtu_slave_fixed8 (
                     default: response_byte = request_r[5];
                 endcase
             end else if (response_function_r == 8'h03) begin
+                value = holding_register(request_address_w);
                 case (byte_index)
                     0: response_byte = 8'h01;
                     1: response_byte = 8'h03;
                     2: response_byte = 8'd2;
-                    3: response_byte = command_echo_o[15:8];
-                    default: response_byte = command_echo_o[7:0];
+                    3: response_byte = value[15:8];
+                    default: response_byte = value[7:0];
                 endcase
             end else begin
                 if (byte_index == 0)
@@ -205,6 +218,7 @@ module modbus_rtu_slave_fixed8 (
             tx_byte_o <= 8'd0;
             tx_start_o <= 1'b0;
             command_echo_o <= 16'd0;
+            vdc_over_limit_o <= 12'd3410;
             clear_fault_o <= 1'b0;
             soft_reset_o <= 1'b0;
             reset_pending_r <= 1'b0;
@@ -284,14 +298,16 @@ module modbus_rtu_slave_fixed8 (
                                     else
                                         start_response(8'h04, 8'h02, 6'd3);
                                 end else if (request_r[1] == 8'h03) begin
-                                    if ((request_address_w == 16'h0100) &&
+                                    if (((request_address_w == 16'h0100) ||
+                                         (request_address_w == 16'h1000)) &&
                                         (request_value_w == 16'd1))
                                         start_response(8'h03, 8'h00, 6'd5);
                                     else
                                         start_response(8'h03, 8'h02, 6'd3);
                                 end else if (request_r[1] == 8'h06) begin
                                     if (request_address_w == 16'h0100) begin
-                                        if (request_value_w > 1)
+                                        if ((request_value_w > 1) ||
+                                            ((request_value_w == 1) && fault_any_i))
                                             start_response(8'h06, 8'h03, 6'd3);
                                         else begin
                                             command_echo_o <= request_value_w;
@@ -311,6 +327,15 @@ module modbus_rtu_slave_fixed8 (
                                             start_response(8'h06, 8'h03, 6'd3);
                                         else begin
                                             reset_pending_r <= 1'b1;
+                                            start_response(8'h06, 8'h00, 6'd6);
+                                        end
+                                    end else if (request_address_w == 16'h1000) begin
+                                        if ((command_echo_o != 16'd0) ||
+                                            (request_value_w == 16'd0) ||
+                                            (request_value_w > 16'd3410))
+                                            start_response(8'h06, 8'h03, 6'd3);
+                                        else begin
+                                            vdc_over_limit_o <= request_value_w[11:0];
                                             start_response(8'h06, 8'h00, 6'd6);
                                         end
                                     end else

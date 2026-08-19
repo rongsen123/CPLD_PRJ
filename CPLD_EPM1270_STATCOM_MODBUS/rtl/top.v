@@ -33,6 +33,13 @@ module top (
     output wire LED3,                        // PIN32: valid-Modbus-frame activity
     output wire LED4                         // PIN31: protocol-error activity
 );
+    // Fixed raw-code temperature protection.  The threshold and direction
+    // remain local to the CPLD and are intentionally not writable by Modbus.
+    // TODO: replace 5000 only after the sensor count/temperature curve and
+    // frequency direction have been verified on hardware.
+    localparam [15:0] TEMPERATURE_OVER_LIMIT_COUNT = 16'd5000;
+    localparam        TEMPERATURE_HIGH_FREQ_IS_HOT = 1'b1;
+
     reg [4:0] por_count_r;                    // 16-clock power-on reset counter
     reg [5:0] soft_reset_count_r;             // Internal reset stretch counter
     wire board_reset_n_w = por_count_r[4];    // Power-on reset release
@@ -60,6 +67,7 @@ module top (
     wire uart_tx_done_w;                      // One-clock byte-done pulse
 
     wire [15:0] command_echo_w;                // 0=STOP, 1=START echo only
+    wire [11:0] vdc_over_limit_w;              // Runtime local software OV threshold
     wire clear_fault_w;                       // Accepted clear-fault pulse
     wire soft_reset_request_w;                // Asserted after FC06 reset echo completes
     wire link_seen_w;                         // A valid addressed request was seen
@@ -116,7 +124,10 @@ module top (
         .average_o(adc_average_w), .average_valid_o(adc_average_valid_w)
     );
 
-    temperature_frequency_monitor u_temperature (
+    temperature_frequency_monitor #(
+        .OVER_TEMP_COUNT(TEMPERATURE_OVER_LIMIT_COUNT),
+        .HIGH_FREQ_IS_HOT(TEMPERATURE_HIGH_FREQ_IS_HOT)
+    ) u_temperature (
         .clk_i(sys_clk_i), .reset_n_i(logic_reset_n_w),
         .temperature_freq_i(temperature_freq_i),
         .temperature_count_o(temperature_count_w),
@@ -149,7 +160,8 @@ module top (
         .temperature_count_i(temperature_count_w),
         .adc_valid_i(adc_seen_r), .temperature_valid_i(temperature_seen_r),
         .fault_flags_i({20'd0, fault_flags_w}), .fault_any_i(fault_any_w),
-        .command_echo_o(command_echo_w), .clear_fault_o(clear_fault_w),
+        .command_echo_o(command_echo_w),
+        .vdc_over_limit_o(vdc_over_limit_w), .clear_fault_o(clear_fault_w),
         .soft_reset_o(soft_reset_request_w),
         .link_seen_o(link_seen_w), .link_fault_o(link_fault_w),
         .protocol_error_pulse_o(protocol_error_pulse_w),
@@ -173,6 +185,7 @@ module top (
         .temperature_over_fault_i(temperature_over_w),
         .temperature_sensor_fault_i(temperature_sensor_fault_w),
         .adc_raw_data_i(adc_raw_w), .adc_raw_data_valid_i(adc_valid_w),
+        .adc_over_limit_i(vdc_over_limit_w),
         .fault_flags_o(fault_flags_w), .fault_code_o(fault_code_unused_w),
         .fault_any_o(fault_any_w), .fault_led_n_o(fault_led_n_o),
         .rx_fault_led_n_o(rx_fault_led_n_o),

@@ -1,28 +1,22 @@
-# CPLD_EPM1270_STATCOM_MODBUS
+# CPLD_PRJ
 
-本工程以`F:\Quartus_project\SST_prj\CPLD_1270_prj`为硬件母版，面向
-`F:\DSP\SST_PRJ\3_STATCOM_PI_PR`的SCI-A Modbus RTU通信调试。
+本仓库用于统一管理 SST 项目相关的 Altera / Intel CPLD (MAX II) 工程。每个子目录对应一个可独立打开、编译和配置的 Quartus 工程。
 
-## 硬件与通信
+## 工程目录
 
-- 器件：MAX II `EPM1270T144C5`，系统时钟30 MHz。
-- 保留母版完整引脚：光纤RX为PIN42、TX为PIN43。
-- 保留母版实测电气关系：PIN42物理空闲低，顶层取反后进入标准UART。
-- UART：115200 bit/s、8N1；CPLD为Modbus从站地址1。
-- DSP请求固定为8字节，CPLD收到第8字节立即做CRC校验并回复。
-- 支持FC04、FC03、FC06以及异常响应01/02/03。
+详见 [PROJECT_INDEX.md](PROJECT_INDEX.md)。
+
+| 工程目录 | 目标器件 | 功能说明 | 配套 DSP |
+| --- | --- | --- | --- |
+| [CPLD_EPM1270_STATCOM_MODBUS](CPLD_EPM1270_STATCOM_MODBUS/) | EPM1270T144C5 | Modbus RTU 从站通信、ADS7818 采样与保护执行（功率输出硬封锁） | 4_STATCOM_CURRENT_LOOP |
+
+## 开发环境
+
+- 开发工具：Altera Quartus II 13.1 (64-bit)
+- 目标器件：MAX II EPM1270T144C5
+- 系统主频：30 MHz
+- 通信接口：光纤 UART (115200 bit/s, 8N1)
 
 ## 安全边界
 
-START/STOP只更新寄存器回显。四路桥臂始终为0，`pwm_hold_o`始终为1，
-风机和旁路继电器保持不动作。写入`0101=A55A`仅在STOP状态产生一次
-故障清除脉冲，仍存在的硬件故障不会被掩盖。
-
-## 无示波器调试LED
-
-- LED1：每256个UART有效字节翻转一次，用于确认PIN42物理接收链路。
-- LED2：收到有效请求且链路在线时点亮。
-- LED3：每16个有效Modbus请求翻转一次。
-- LED4：每16个协议/UART错误翻转一次。
-
-详细寄存器和测试命令见`docs/MODBUS_RTU_REGISTER_MAP.md`。
+当前所有工程均严格维持功率输出硬封锁：四路桥臂输出为 0，`pwm_hold_o=1`，继电器与风机保持安全状态。

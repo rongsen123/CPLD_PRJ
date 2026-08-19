@@ -3,8 +3,7 @@
  * A reset pulse clears only faults whose sources are no longer active.
  */
 module system_fault_monitor #(
-    parameter [3:0]  MODULE_ID = 4'h1,
-    parameter [11:0] ADC_OVER_LIMIT = 12'd3410
+    parameter [3:0]  MODULE_ID = 4'h1
 ) (
     input  wire        clk_i,                       // 30 MHz system clock
     input  wire        reset_n_i,                   // Active-low reset
@@ -21,6 +20,7 @@ module system_fault_monitor #(
     input  wire        temperature_sensor_fault_i,  // Temperature input timeout
     input  wire [11:0] adc_raw_data_i,              // Latest raw ADC code
     input  wire        adc_raw_data_valid_i,        // ADC update pulse
+    input  wire [11:0] adc_over_limit_i,            // Runtime software OV threshold
     output reg  [11:0] fault_flags_o,               // Latched individual fault bits
     output reg  [15:0] fault_code_o,                // Module ID plus latched bits
     output reg         fault_any_o,                 // At least one latched fault
@@ -32,6 +32,7 @@ module system_fault_monitor #(
     reg [4:0] async_fault_meta_r;
     reg [4:0] async_fault_sync_r;
     reg       sw_over_fault_r;
+    reg [1:0] sw_over_confirm_count_r;
     wire [4:0] async_fault_w;
     wire [11:0] active_fault_flags_w;
     wire [11:0] next_latched_fault_flags_w;
@@ -72,6 +73,7 @@ module system_fault_monitor #(
             async_fault_meta_r <= 5'd0;
             async_fault_sync_r <= 5'd0;
             sw_over_fault_r    <= 1'b0;
+            sw_over_confirm_count_r <= 2'd0;
             fault_flags_o      <= 12'd0;
             fault_code_o       <= 16'd0;
             fault_any_o        <= 1'b0;
@@ -82,8 +84,19 @@ module system_fault_monitor #(
             async_fault_meta_r <= async_fault_w;
             async_fault_sync_r <= async_fault_meta_r;
 
-            if (adc_raw_data_valid_i)
-                sw_over_fault_r <= (adc_raw_data_i >= ADC_OVER_LIMIT);
+            // Require three consecutive raw samples above the configured
+            // threshold.  The count is fixed in RTL and is not host-adjustable.
+            if (adc_raw_data_valid_i) begin
+                if (adc_raw_data_i >= adc_over_limit_i) begin
+                    if (sw_over_confirm_count_r < 2'd3)
+                        sw_over_confirm_count_r <= sw_over_confirm_count_r + 1'b1;
+                    if (sw_over_confirm_count_r >= 2'd2)
+                        sw_over_fault_r <= 1'b1;
+                end else begin
+                    sw_over_confirm_count_r <= 2'd0;
+                    sw_over_fault_r <= 1'b0;
+                end
+            end
 
             fault_flags_o <= next_latched_fault_flags_w;
             fault_any_o   <= next_fault_any_w;
