@@ -9,6 +9,7 @@
 | 工程目录 | 目标器件 | 功能说明 | 配套 DSP |
 | --- | --- | --- | --- |
 | [CPLD_EPM1270_STATCOM_MODBUS](CPLD_EPM1270_STATCOM_MODBUS/) | EPM1270T144C5 | Modbus RTU 从站通信、ADS7818 采样与保护执行（功率输出硬封锁） | 4_STATCOM_CURRENT_LOOP |
+| [CPLD_EPM1270_BOARD_TEST](CPLD_EPM1270_BOARD_TEST/) | EPM1270T144C5 | Modbus RTU 从站通信、ADS7818 原始码采样、互补 PWM 测试与故障模拟注入 | 独立板级测试（上位机见 host_app） |
 
 ## 开发环境
 
@@ -19,4 +20,5 @@
 
 ## 安全边界
 
-当前所有工程均严格维持功率输出硬封锁：四路桥臂输出为 0，`pwm_hold_o=1`，继电器与风机保持安全状态。
+- `CPLD_EPM1270_STATCOM_MODBUS`：严格维持功率输出硬封锁，四路桥臂输出为 0，`pwm_hold_o=1`，继电器与风机保持安全状态。
+- `CPLD_EPM1270_BOARD_TEST`：专用测试镜像，仅在上位机下发 START 且无有效故障时方可输出测试互补 PWM；硬件过压、驱动故障或链路超时将立即硬件封锁。
